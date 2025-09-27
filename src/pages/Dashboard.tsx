@@ -26,6 +26,8 @@ interface DashboardProps {
 const Dashboard = ({ onLogout }: DashboardProps) => {
   const [mascotClicks, setMascotClicks] = useState(0);
   const [showEasterEgg, setShowEasterEgg] = useState(false);
+  const [showSubjectEasterEgg, setShowSubjectEasterEgg] = useState<{ show: boolean; content: string } | null>(null);
+  const [mascotCooldown, setMascotCooldown] = useState(false);
   const [idleTimeout, setIdleTimeout] = useState<NodeJS.Timeout | null>(null);
   const [showIdleMessage, setShowIdleMessage] = useState(false);
 
@@ -42,7 +44,8 @@ const Dashboard = ({ onLogout }: DashboardProps) => {
       description: "Master quadratic equations and functions",
       thumbnail: "🔢",
       duration: "45 min",
-      difficulty: "Intermediate"
+      difficulty: "Intermediate",
+      subject: "math"
     },
     {
       id: 2,
@@ -50,7 +53,8 @@ const Dashboard = ({ onLogout }: DashboardProps) => {
       description: "Explore the cultural rebirth of Europe",
       thumbnail: "🎨",
       duration: "30 min",
-      difficulty: "Beginner"
+      difficulty: "Beginner",
+      subject: "history"
     },
     {
       id: 3,
@@ -58,9 +62,28 @@ const Dashboard = ({ onLogout }: DashboardProps) => {
       description: "Understanding atomic structure",
       thumbnail: "⚗️",
       duration: "60 min",
-      difficulty: "Intermediate"
+      difficulty: "Intermediate",
+      subject: "science"
     }
   ];
+
+  const subjectFacts = {
+    math: [
+      "Did you know? The word 'algebra' comes from Arabic 'al-jabr' meaning 'reunion of broken parts'! 🔢",
+      "Fun fact: Zero was invented by ancient Indian mathematicians around 5th century! 🕳️",
+      "Amazing: The fibonacci sequence appears everywhere in nature - from sunflower seeds to galaxy spirals! 🌻"
+    ],
+    history: [
+      "Fun fact: Leonardo da Vinci wrote his notes backwards, from right to left! 🎨",
+      "Did you know? The Renaissance period gave us both the printing press and double-entry bookkeeping! 📚",
+      "Amazing: Michelangelo painted the Sistine Chapel ceiling lying on his back for 4 years! 🎭"
+    ],
+    science: [
+      "Did you know? A single drop of water contains about 1.7 sextillion molecules! 💧",
+      "Fun fact: Honey never spoils - archaeologists found edible honey in Egyptian tombs! 🍯",
+      "Amazing: Your body produces about 25 million new cells every second! 🧬"
+    ]
+  };
 
   const achievements = [
     { id: 1, title: "First Steps", description: "Completed first lesson", icon: Star, earned: true },
@@ -84,14 +107,32 @@ const Dashboard = ({ onLogout }: DashboardProps) => {
   ];
 
   const handleMascotClick = () => {
+    if (mascotCooldown) return;
+    
     const newClickCount = mascotClicks + 1;
     setMascotClicks(newClickCount);
     
     if (newClickCount === 5) {
       setShowEasterEgg(true);
       setMascotClicks(0);
+      setMascotCooldown(true);
+      
       setTimeout(() => setShowEasterEgg(false), 4000);
+      setTimeout(() => setMascotCooldown(false), 2000);
     }
+  };
+
+  const handleSubjectClick = (subject: string) => {
+    if (showSubjectEasterEgg?.show) {
+      setShowSubjectEasterEgg(null);
+      return;
+    }
+    
+    const facts = subjectFacts[subject as keyof typeof subjectFacts] || [];
+    const randomFact = facts[Math.floor(Math.random() * facts.length)];
+    
+    setShowSubjectEasterEgg({ show: true, content: randomFact });
+    setTimeout(() => setShowSubjectEasterEgg(null), 5000);
   };
 
   const resetIdleTimer = () => {
@@ -142,11 +183,11 @@ const Dashboard = ({ onLogout }: DashboardProps) => {
         </div>
         
         <div className="flex items-center gap-4">
-          <Button variant="outline" size="sm" className="text-white border-white/20 hover:bg-white/10">
+          <Button variant="outline" size="sm" className="text-white/20 border-white/10 hover:text-white hover:border-white/20 hover:bg-white/10 transition-all duration-300">
             <Bell className="h-4 w-4 mr-2" />
             Notifications
           </Button>
-          <Button onClick={onLogout} variant="outline" size="sm" className="text-white border-white/20 hover:bg-white/10">
+          <Button onClick={onLogout} variant="outline" size="sm" className="text-white/20 border-white/10 hover:text-white hover:border-white/20 hover:bg-white/10 transition-all duration-300">
             Logout
           </Button>
         </div>
@@ -199,7 +240,12 @@ const Dashboard = ({ onLogout }: DashboardProps) => {
             <CardContent className="space-y-4">
               {recommendations.map((rec) => (
                 <div key={rec.id} className="flex items-center gap-4 p-4 rounded-lg bg-white/10 hover:bg-white/20 transition-all duration-300 cursor-pointer">
-                  <div className="text-4xl">{rec.thumbnail}</div>
+                  <div 
+                    className="text-4xl cursor-pointer hover:scale-110 transition-transform duration-200"
+                    onClick={() => handleSubjectClick(rec.subject)}
+                  >
+                    {rec.thumbnail}
+                  </div>
                   <div className="flex-1">
                     <h4 className="font-semibold">{rec.title}</h4>
                     <p className="text-sm text-muted-foreground">{rec.description}</p>
@@ -299,8 +345,8 @@ const Dashboard = ({ onLogout }: DashboardProps) => {
 
       {/* Easter Egg Modal */}
       {showEasterEgg && (
-        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
-          <div className="card-glass p-8 text-center max-w-md mx-4">
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 animate-fade-in">
+          <div className="card-glass p-8 text-center max-w-md mx-4 animate-scale-in">
             <div className="text-6xl mb-4">🎉</div>
             <h3 className="text-xl font-bold mb-2">Easter Egg Unlocked!</h3>
             <p className="text-muted-foreground mb-4">
@@ -309,6 +355,19 @@ const Dashboard = ({ onLogout }: DashboardProps) => {
             <Button onClick={() => setShowEasterEgg(false)} className="btn-primary">
               Cool! Thanks!
             </Button>
+          </div>
+        </div>
+      )}
+
+      {/* Subject Easter Egg */}
+      {showSubjectEasterEgg?.show && (
+        <div className="fixed top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 z-50 animate-fade-in">
+          <div className="card-glass p-6 text-center max-w-sm mx-4 animate-scale-in">
+            <div className="text-4xl mb-3">💡</div>
+            <h4 className="text-lg font-bold mb-2">Fun Subject Fact!</h4>
+            <p className="text-muted-foreground text-sm">
+              {showSubjectEasterEgg.content}
+            </p>
           </div>
         </div>
       )}
